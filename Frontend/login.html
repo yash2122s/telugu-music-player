@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Telugu Music Player</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/login.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>Telugu YASH Music</h1>
+                <p id="login-status">Login to your account</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <input type="email" id="email" required>
+                    <label for="email">Email</label>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" required>
+                    <label for="password">Password</label>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+                <p class="register-link">New user? <a href="#" id="register-toggle">Register here</a></p>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, signInWithEmailAndPassword, onAuthStateChanged } from './firebase-config.js';
+        
+        const loginForm = document.getElementById('login-form');
+        const loginStatus = document.getElementById('login-status');
+        const registerToggle = document.getElementById('register-toggle');
+        let isRegistering = false;
+
+        // Check if user is already logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = '/index.html';
+            }
+            console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            
+            try {
+                submitBtn.disabled = true;
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Set user role based on email
+                const isAdmin = email === 'admin@teluguyash.com';
+                
+                // Store user info in sessionStorage
+                sessionStorage.setItem('currentUser', JSON.stringify({
+                    email: user.email,
+                    uid: user.uid,
+                    role: isAdmin ? 'admin' : 'user'
+                }));
+
+                window.location.href = '/index.html';
+            } catch (error) {
+                console.error('Auth error:', error);
+                loginStatus.textContent = error.message;
+                loginStatus.style.color = 'red';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        registerToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            isRegistering = !isRegistering;
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            submitBtn.textContent = isRegistering ? 'Register' : 'Login';
+            registerToggle.textContent = isRegistering ? 'Back to Login' : 'Register here';
+            loginStatus.textContent = isRegistering ? 'Create new account' : 'Login to your account';
+        });
+    </script>
+</body>
+</html> 

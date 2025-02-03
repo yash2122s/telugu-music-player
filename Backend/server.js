@@ -41,23 +41,15 @@ const upload = multer({
     }
 });
 
-// CORS configuration - Place this BEFORE any routes
+// CORS configuration
 app.use(cors({
     origin: [
         'http://localhost:3000',
-        'https://your-frontend-domain.com', // Add your frontend URL when you deploy it
-        'https://telugu-music-player.onrender.com' // Add your Render URL when you get it
+        'https://telugu-music-player.vercel.app',
+        'https://telugu-music-player-backend.onrender.com' // Add your Render URL
     ],
     credentials: true
 }));
-
-// Add this before your routes
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    next();
-});
 
 // Body parser middleware
 app.use(express.json());
@@ -277,20 +269,28 @@ app.get('/api/test', (req, res) => {
     });
 });
 
-// Serve static files - Place this AFTER the API routes
-app.use(express.static(path.join(__dirname, '../Frontend')));
-
-// Handle all other routes by serving index.html
+// Remove or modify the catch-all route
+// Instead of serving Frontend/index.html, send an API message
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../Frontend/index.html'));
+    res.json({ 
+        message: "Telugu Music Player API", 
+        status: "running",
+        endpoints: {
+            test: "/api/test",
+            songs: "/api/songs",
+            upload: "/api/upload"
+        }
+    });
 });
 
-// Start server
+// Update your server startup with the correct URL
 const PORT = process.env.PORT || 3000;
+const RENDER_URL = 'https://telugu-music-player-backend.onrender.com'; // Add your actual Render URL
+
 app.listen(PORT, () => {
     console.log('=================================');
     console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`📝 Test the server: http://localhost:${PORT}/api/test`);
+    console.log(`📝 Test the server: ${process.env.NODE_ENV === 'production' ? RENDER_URL : 'http://localhost:' + PORT}/api/test`);
     console.log(`📚 MongoDB Status: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected'}`);
     console.log('=================================');
 });

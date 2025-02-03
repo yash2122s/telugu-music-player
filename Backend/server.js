@@ -7,7 +7,14 @@ const mongoose = require('mongoose');
 const Song = require('./models/Song');
 const authMiddleware = require('./middleware/auth');
 const fs = require('fs');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+// Add this after dotenv config to debug
+console.log('Environment Variables:', {
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+    FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+    // Don't log the private key
+});
 
 // Initialize express
 const app = express();
@@ -20,8 +27,9 @@ cloudinary.config({
 });
 
 // Create uploads directory if it doesn't exist
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // Configure multer for file uploads
@@ -45,10 +53,13 @@ const upload = multer({
 app.use(cors({
     origin: [
         'http://localhost:3000',
+        'http://localhost:3001', // React development server
         'https://telugu-music-player.vercel.app',
-        'https://telugu-music-player-backend.onrender.com' // Add your Render URL
+        'https://telugu-music-player-backend.onrender.com'
     ],
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Body parser middleware

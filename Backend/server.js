@@ -43,10 +43,21 @@ const upload = multer({
 
 // CORS configuration - Place this BEFORE any routes
 app.use(cors({
-    origin: ['http://127.0.0.1:5500', 'http://localhost:5500', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    origin: [
+        'http://localhost:3000',
+        'https://your-frontend-domain.com', // Add your frontend URL when you deploy it
+        'https://telugu-music-player.onrender.com' // Add your Render URL when you get it
+    ],
     credentials: true
 }));
+
+// Add this before your routes
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    next();
+});
 
 // Body parser middleware
 app.use(express.json());
@@ -257,6 +268,15 @@ app.put('/api/songs/:id', authMiddleware, upload.single('coverImage'), async (re
     }
 });
 
+// Add this test route near your other routes
+app.get('/api/test', (req, res) => {
+    res.json({ 
+        message: "Server is running!", 
+        timestamp: new Date(),
+        status: "OK"
+    });
+});
+
 // Serve static files - Place this AFTER the API routes
 app.use(express.static(path.join(__dirname, '../Frontend')));
 
@@ -268,7 +288,11 @@ app.get('*', (req, res) => {
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log('=================================');
+    console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`📝 Test the server: http://localhost:${PORT}/api/test`);
+    console.log(`📚 MongoDB Status: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected'}`);
+    console.log('=================================');
 });
 
 // Add this after MongoDB connection
@@ -296,10 +320,27 @@ async function cleanupTestSongs() {
 }
 
 // Update MongoDB connection to include cleanup
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    // Add these options for better stability
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+})
 .then(async () => {
     console.log('Connected to MongoDB Atlas');
     await cleanupTestSongs();
+    mongoose.connection.on('connected', () => {
+        console.log('✅ MongoDB connected successfully');
+    });
+
+    mongoose.connection.on('error', (err) => {
+        console.error('❌ MongoDB connection error:', err);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+        console.log('❌ MongoDB disconnected');
+    });
 })
 .catch(err => {
     console.error('MongoDB connection error:', err);
